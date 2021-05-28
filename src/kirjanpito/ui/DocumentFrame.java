@@ -26,6 +26,7 @@ import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
@@ -35,6 +36,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.logging.Level;
@@ -77,13 +79,20 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 
+import com.opencsv.CSVReader;
+
 import kirjanpito.db.Account;
+import kirjanpito.db.AccountDAO;
 import kirjanpito.db.DataAccessException;
+import kirjanpito.db.DataSource;
 import kirjanpito.db.Document;
+import kirjanpito.db.DocumentDAO;
 import kirjanpito.db.DocumentType;
 import kirjanpito.db.Entry;
+import kirjanpito.db.EntryDAO;
 import kirjanpito.db.EntryTemplate;
 import kirjanpito.db.Period;
+import kirjanpito.db.Session;
 import kirjanpito.db.Settings;
 import kirjanpito.models.COAModel;
 import kirjanpito.models.CSVExportWorker;
@@ -121,6 +130,7 @@ import kirjanpito.reports.VATReportModel;
 import kirjanpito.reports.VATReportPrint;
 import kirjanpito.ui.resources.Resources;
 import kirjanpito.util.AppSettings;
+import kirjanpito.util.HolviProcountorCSVImport;
 import kirjanpito.util.Registry;
 import kirjanpito.util.RegistryAdapter;
 
@@ -185,6 +195,9 @@ public class DocumentFrame extends JFrame implements AccountSelectionListener {
 	private boolean searchEnabled;
 	private BigDecimal debitTotal;
 	private BigDecimal creditTotal;
+
+	// Added JMenuITtem, EK
+	private JMenuItem holviImportMenuItem;
 
 	private static Logger logger = Logger.getLogger(Kirjanpito.LOGGER_NAME);
 	private static final long serialVersionUID = 1L;
@@ -361,6 +374,12 @@ public class DocumentFrame extends JFrame implements AccountSelectionListener {
 		menu.add(startingBalancesMenuItem);
 		menu.add(propertiesMenuItem);
 		menu.add(settingsMenuItem);
+		
+		// Lisätty Holvi tuonti valikkoon, EK
+		menu.addSeparator();
+
+		holviImportMenuItem = SwingUtils.createMenuItem("Tuo Holvista…", null, 'H', null, holviListener);
+		menu.add(holviImportMenuItem);
 
 		/* Luodaan Siirry-valikko. */
 		menu = gotoMenu = new JMenu("Siirry");
@@ -1218,6 +1237,47 @@ public class DocumentFrame extends JFrame implements AccountSelectionListener {
 		dialog.create();
 		dialog.setVisible(true);
 	}
+
+	/**
+	 * Avaa Holvi tuonti -ikkunan
+	 * EK
+	 */
+	public void showHolviImport() {
+		if (!saveDocumentIfChanged()) {
+			return;
+		}
+
+		HolviImportDialog dialog = new HolviImportDialog(this);
+
+		AppSettings settings = AppSettings.getInstance();
+		String url = "C:\\temp\\procountor.csv";
+
+		dialog.create();
+		dialog.setURL(url);
+		dialog.setVisible(true);
+
+		if (dialog.getResult() == JOptionPane.OK_OPTION) {
+
+			try {
+				url = dialog.getURL();
+			DataSource dataSource = registry.getDataSource();
+			Session sess = dataSource.openSession();
+			Period period = registry.getPeriod();
+
+			ImportFromHolviCSV(url, dataSource.getAccountDAO(sess), dataSource.getDocumentDAO(sess), dataSource.getEntryDAO(sess), period);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			
+		}
+
+		dialog.dispose();
+
+		updatePosition();
+		updateDocument();
+		updateTotalRow();
+	}
+
 
 	/**
 	 * Tallentaa viennit CSV-tiedostoon.
@@ -3072,6 +3132,13 @@ public class DocumentFrame extends JFrame implements AccountSelectionListener {
 		}
 	};
 
+	/* Tuo Holvista EK*/
+	private ActionListener holviListener = new ActionListener() {
+		public void actionPerformed(ActionEvent e) {
+			showHolviImport();
+		}
+	};
+
 	/* Lisää vienti */
 	private AbstractAction addEntryListener = new AbstractAction() {
 		private static final long serialVersionUID = 1L;
@@ -3529,4 +3596,120 @@ public class DocumentFrame extends JFrame implements AccountSelectionListener {
 			}
 		}
 	}
+
+	/**
+	 * Tuo tilitapahtumat Holvista otetun Procountor -vienti CSV:n pohjalta.
+	 * Palauttaa Boolean -arvon, joka kertoo onnistuiko operaatio.
+	 * 
+	 * @param url		Tuotavan CSV-tiedoston polku.
+	 * @param accDAO	AccountDAO viittaus
+	 * @param docDAO	DocumentDAO viittaus.
+	 * @param entryDAO	EntryDAO viittaus.
+	 * @param period	Period -olio (tilikausi), jolle tapahtumat kirjataan.
+	 * @return			true/false riippuen onnistuiko tuonti.
+	 */
+	private boolean ImportFromHolviCSV(String url, AccountDAO accDAO, DocumentDAO docDAO, EntryDAO entryDAO, Period period) {
+        
+        CSVReader reader = null;
+        //ArrayList<Document> documents = new ArrayList<Document>();
+        //ArrayList<Entry> entries = new ArrayList<Entry>();
+        
+        Document doc = null;
+        Entry entry = null;
+
+        try {
+			// Luetaan CSV tiedosto.
+            reader = new CSVReader(new FileReader(url), ';');
+            
+            String[] nextLine;
+
+            String dateString;
+            Date docDate;
+            int docId;
+            boolean debet;
+            int accountId;
+
+            while ((nextLine = reader.readNext()) != null) {
+                
+                if (nextLine[7].length() > 0) {
+                    printToConsole(nextLine);
+
+                    // Luodaan tilitapahtumasta Document -olio. (Tosite)
+                    doc = docDAO.create(period.getId(), 1, Integer.MAX_VALUE);
+
+                    dateString = nextLine[2].substring(0, Math.min(nextLine[2].length(), 10));
+                    docDate = new SimpleDateFormat("yyyy-MM-dd").parse(dateString);
+                    doc.setDate(docDate);
+
+                    // Tallennetaan tosite tietokantaan
+                    docDAO.save(doc);
+
+                    // Tositteen ensimmäinen vienti.
+                    // Haetaan aiemmin luodun tositteen ID kannasta.
+                    docId = doc.getId();
+
+					// Täytetään viennin tiedot
+                    entry = new Entry();
+                    entry.setDocumentId(docId);
+                    entry.setAccountId(167); // TODO: Muuta oletusvastintili parametriseksi kovakoodatusta.
+
+                    BigDecimal amount = new BigDecimal(nextLine[5].replace(',', '.'));
+                    BigDecimal absAmount = amount.abs();
+                    // Päätellään onko kyseessä debet/kredit vienti.
+					if (amount.signum() < 0) {
+                        debet = true;
+                    } else {
+                        debet = false;
+                    }
+
+                    entry.setDebit(debet);
+                    entry.setAmount(absAmount);
+                    entry.setRowNumber(1);
+                    entry.setFlags(0);
+                    entry.setDescription(nextLine[8]);
+					
+					// Tallennetaan vienti kantaan.
+                    entryDAO.save(entry);
+                    
+                    // Tositteen toinen vienti
+                    entry = new Entry();
+                    accountId = accDAO.getIdByAccountNumber(Integer.parseInt(nextLine[13]));
+
+                    entry.setDocumentId(docId);
+                    entry.setAccountId(accountId);
+                    entry.setDebit(!debet); // Tässä eri vienti tyyppi kuin edellisessä kirjauksessa.
+                    entry.setAmount(absAmount);
+                    entry.setRowNumber(2);
+                    entry.setFlags(0);
+                    entry.setDescription(nextLine[8]);
+                    
+					// Tallennetaan vienti kantaan.
+                    entryDAO.save(entry);
+
+                    // DONE
+                }
+            }
+
+			return true;
+
+        } catch (Exception e) {  
+            e.printStackTrace();  
+        }
+
+        return false;
+    }
+
+	/**
+	 * Apufunktio Holvi tuonnin debuggaukseen. Tulostaa annetun rivin olennaiset tiedot konsoliin.
+	 * @param line	CSV-tiedoston rivi.
+	 */
+    private void printToConsole(String[] line) {
+        System.out.print(
+            line[2].substring(0, Math.min(line[2].length(), 10)) + " - " + 
+            line[5] + " - " + 
+            line[13] + " - " +
+            line[8] 
+        );
+        System.out.print("\n");
+    }
 }

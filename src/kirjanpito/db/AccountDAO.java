@@ -6,7 +6,7 @@ import java.util.List;
  * <code>AccountDAO</code>:n avulla voidaan lisätä, muokata ja
  * poistaa tilitietoja sekä hakea olemassa olevien tilien tietoja.
  * 
- * @author Tommi Helineva
+ * @author Tommi Helineva, Eetu Kallio
  */
 public interface AccountDAO {
 	/**
@@ -33,4 +33,12 @@ public interface AccountDAO {
 	 * @throws DataAccessException jos tietojen hakeminen epäonnistuu
 	 */
 	public List<Account> getAll() throws DataAccessException;
+
+	/**
+	 * Hakee tietokannasta tilin ID:n tilinumeron perusteella.
+	 * 
+	 * @return tilin ID
+	 * @throws DataAccessException jos tietojen hakeminen epäonnistuu
+	 */
+	public int getIdByAccountNumber(int accountNum) throws DataAccessException;
 }
