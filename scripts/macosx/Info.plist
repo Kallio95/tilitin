@@ -33,6 +33,7 @@
 			<string>$JAVAROOT/tilitin.jar</string>
 			<string>$JAVAROOT/sqlite-jdbc.jar</string>
 			<string>$JAVAROOT/itext.jar</string>
+			<string>$JAVAROOT/opencsv-3.8.jar</string>
 		</array>
 	</dict>
 </dict>

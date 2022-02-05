@@ -131,9 +131,6 @@ public class HolviImportDialog extends JDialog {
         container.add(comp, c);
     }
 
-	/**
-	 * Luo ikkunan painikkeet. (OK/Peruuta)
-	 */
     private void createButtonPanel() {
 		GridBagConstraints c = new GridBagConstraints();
 		c.ipady = 6;
@@ -170,5 +167,17 @@ public class HolviImportDialog extends JDialog {
 		
 		panel.add(cancelButton);
 		panel.add(okButton);
+	}
+
+    private void openDirectory() {
+		File file = new File(urlTextField.getText().substring(12));
+		
+		try {
+			Desktop.getDesktop().open(file.getParentFile());
+		}
+		catch (Exception e) {
+			SwingUtils.showErrorMessage(this,
+					"Tiedostoselaimen avaaminen epäonnistui.");
+		}
 	}
 }

@@ -222,4 +222,37 @@ public abstract class SQLAccountDAO implements AccountDAO {
 
 		stmt.setInt(8, obj.getFlags());
 	}
+
+	/**
+	 * Hakee tietokannasta tilin ID:n tilinumeron perusteella
+	 *
+	 * @return Tilin ID
+	 * @throws DataAccessException jos tietojen hakeminen epäonnistuu
+	 */
+	public int getIdByAccountNumber(int accountNumber) throws DataAccessException {
+		int accountID = 0;
+		ResultSet rs;
+		Account account;
+
+		try {
+			PreparedStatement stmt = getSelectByNumberQuery(accountNumber);
+			rs = stmt.executeQuery();
+
+			/* Luetaan tiedot ResultSetistä ja luodaan oliot. */
+			while (rs.next()) {
+				account = createObject(rs);
+				accountID = account.getId();
+			}
+
+			rs.close();
+			stmt.close();
+		}
+		catch (SQLException e) {
+			throw new DataAccessException(e.getMessage(), e);
+		}
+
+		return accountID;
+	}
+
+	protected abstract PreparedStatement getSelectByNumberQuery(int accountNumber) throws SQLException;
 }

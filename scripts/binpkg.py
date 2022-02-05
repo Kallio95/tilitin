@@ -12,6 +12,7 @@ FILES = (
 	('lib/itext.jar', 'tilitin-%(VERSION)s/itext.jar'),
 	('lib/sqlite-jdbc.jar', 'tilitin-%(VERSION)s/sqlite-jdbc.jar'),
 	('lib/postgresql-jdbc.jar', 'tilitin-%(VERSION)s/postgresql-jdbc.jar'),
+	('lib/opencsv-3.8.jar', 'Tilitin.app/Contents/Resources/Java/opencsv-3.8.jar'),
 	('COPYING', 'tilitin-%(VERSION)s/COPYING'),
 	('src/kirjanpito/ui/resources/tilitin-24x24.png', 'tilitin-%(VERSION)s/icons/tilitin-24x24.png'),
 	('src/kirjanpito/ui/resources/tilitin-32x32.png', 'tilitin-%(VERSION)s/icons/tilitin-32x32.png'),

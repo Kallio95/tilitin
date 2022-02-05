@@ -13,6 +13,7 @@ FILES = (
 	('lib/itext.jar', 'Tilitin.app/Contents/Resources/Java/itext.jar'),
 	('lib/sqlite-jdbc.jar', 'Tilitin.app/Contents/Resources/Java/sqlite-jdbc.jar'),
 	('lib/postgresql-jdbc.jar', 'Tilitin.app/Contents/Resources/Java/postgresql-jdbc.jar'),
+	('lib/opencsv-3.8.jar', 'Tilitin.app/Contents/Resources/Java/opencsv-3.8.jar'),
 	('scripts/macosx/JavaApplicationStub', 'Tilitin.app/Contents/MacOS/JavaApplicationStub'),
 	('scripts/macosx/tilitin.icns', 'Tilitin.app/Contents/Resources/tilitin.icns')
 )

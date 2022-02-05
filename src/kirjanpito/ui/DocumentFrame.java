@@ -196,7 +196,7 @@ public class DocumentFrame extends JFrame implements AccountSelectionListener {
 	private BigDecimal debitTotal;
 	private BigDecimal creditTotal;
 
-	// Added JMenuITtem, EK
+	// Added JMenuITtem by Eetu Kallio
 	private JMenuItem holviImportMenuItem;
 
 	private static Logger logger = Logger.getLogger(Kirjanpito.LOGGER_NAME);
@@ -375,7 +375,7 @@ public class DocumentFrame extends JFrame implements AccountSelectionListener {
 		menu.add(propertiesMenuItem);
 		menu.add(settingsMenuItem);
 		
-		// Lisätty Holvi tuonti valikkoon, EK
+		// Lisätty Holvi tuonti valikkoon EK
 		menu.addSeparator();
 
 		holviImportMenuItem = SwingUtils.createMenuItem("Tuo Holvista…", null, 'H', null, holviListener);
@@ -3597,28 +3597,16 @@ public class DocumentFrame extends JFrame implements AccountSelectionListener {
 		}
 	}
 
-	/**
-	 * Tuo tilitapahtumat Holvista otetun Procountor -vienti CSV:n pohjalta.
-	 * Palauttaa Boolean -arvon, joka kertoo onnistuiko operaatio.
-	 * 
-	 * @param url		Tuotavan CSV-tiedoston polku.
-	 * @param accDAO	AccountDAO viittaus
-	 * @param docDAO	DocumentDAO viittaus.
-	 * @param entryDAO	EntryDAO viittaus.
-	 * @param period	Period -olio (tilikausi), jolle tapahtumat kirjataan.
-	 * @return			true/false riippuen onnistuiko tuonti.
-	 */
 	private boolean ImportFromHolviCSV(String url, AccountDAO accDAO, DocumentDAO docDAO, EntryDAO entryDAO, Period period) {
         
         CSVReader reader = null;
-        //ArrayList<Document> documents = new ArrayList<Document>();
-        //ArrayList<Entry> entries = new ArrayList<Entry>();
+        ArrayList<Document> documents = new ArrayList<Document>();
+        ArrayList<Entry> entries = new ArrayList<Entry>();
         
         Document doc = null;
         Entry entry = null;
 
         try {
-			// Luetaan CSV tiedosto.
             reader = new CSVReader(new FileReader(url), ';');
             
             String[] nextLine;
@@ -3634,29 +3622,28 @@ public class DocumentFrame extends JFrame implements AccountSelectionListener {
                 if (nextLine[7].length() > 0) {
                     printToConsole(nextLine);
 
-                    // Luodaan tilitapahtumasta Document -olio. (Tosite)
+                    // Create Document
                     doc = docDAO.create(period.getId(), 1, Integer.MAX_VALUE);
 
                     dateString = nextLine[2].substring(0, Math.min(nextLine[2].length(), 10));
                     docDate = new SimpleDateFormat("yyyy-MM-dd").parse(dateString);
                     doc.setDate(docDate);
 
-                    // Tallennetaan tosite tietokantaan
+                    // Save document to DB
                     docDAO.save(doc);
 
-                    // Tositteen ensimmäinen vienti.
-                    // Haetaan aiemmin luodun tositteen ID kannasta.
+
+                    // First Entry
+                    // Get document ID
                     docId = doc.getId();
 
-					// Täytetään viennin tiedot
                     entry = new Entry();
                     entry.setDocumentId(docId);
-                    entry.setAccountId(167); // TODO: Muuta oletusvastintili parametriseksi kovakoodatusta.
+                    entry.setAccountId(167); // TODO Remove hard code
 
                     BigDecimal amount = new BigDecimal(nextLine[5].replace(',', '.'));
                     BigDecimal absAmount = amount.abs();
-                    // Päätellään onko kyseessä debet/kredit vienti.
-					if (amount.signum() < 0) {
+                    if (amount.signum() < 0) {
                         debet = true;
                     } else {
                         debet = false;
@@ -3667,31 +3654,27 @@ public class DocumentFrame extends JFrame implements AccountSelectionListener {
                     entry.setRowNumber(1);
                     entry.setFlags(0);
                     entry.setDescription(nextLine[8]);
-					
-					// Tallennetaan vienti kantaan.
+
                     entryDAO.save(entry);
                     
-                    // Tositteen toinen vienti
+                    // Second Entry
                     entry = new Entry();
                     accountId = accDAO.getIdByAccountNumber(Integer.parseInt(nextLine[13]));
 
                     entry.setDocumentId(docId);
                     entry.setAccountId(accountId);
-                    entry.setDebit(!debet); // Tässä eri vienti tyyppi kuin edellisessä kirjauksessa.
+                    entry.setDebit(!debet);
                     entry.setAmount(absAmount);
                     entry.setRowNumber(2);
                     entry.setFlags(0);
                     entry.setDescription(nextLine[8]);
                     
-					// Tallennetaan vienti kantaan.
                     entryDAO.save(entry);
 
                     // DONE
+
                 }
             }
-
-			return true;
-
         } catch (Exception e) {  
             e.printStackTrace();  
         }
@@ -3699,10 +3682,6 @@ public class DocumentFrame extends JFrame implements AccountSelectionListener {
         return false;
     }
 
-	/**
-	 * Apufunktio Holvi tuonnin debuggaukseen. Tulostaa annetun rivin olennaiset tiedot konsoliin.
-	 * @param line	CSV-tiedoston rivi.
-	 */
     private void printToConsole(String[] line) {
         System.out.print(
             line[2].substring(0, Math.min(line[2].length(), 10)) + " - " + 

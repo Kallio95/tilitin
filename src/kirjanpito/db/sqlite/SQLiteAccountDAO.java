@@ -90,4 +90,9 @@ public class SQLiteAccountDAO extends SQLAccountDAO {
 
 		stmt.setInt(8, obj.getFlags());
 	}
+
+	protected PreparedStatement getSelectByNumberQuery(int accountNumber) throws SQLException {
+		return sess.prepareStatement("SELECT id, number, name, type, vat_code, vat_percentage, vat_account1_id, vat_account2_id, flags FROM account WHERE number=" + accountNumber);
+	}
+
 }
