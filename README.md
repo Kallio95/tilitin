@@ -2,4 +2,4 @@
 Lisätty mahdollisuus tuoda tilitapahtumia csv-tiedostosta.
 
 Valmis jar-paketti:
-www.ekallio.fi/tilitin.jar
+www.ekallio.fi/share/tilitin.jar
