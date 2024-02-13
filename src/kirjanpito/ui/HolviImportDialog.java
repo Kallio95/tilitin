@@ -37,7 +37,7 @@ public class HolviImportDialog extends JDialog {
     private static final long serialVersionUID = 1L;
 
     public HolviImportDialog(Frame owner) {
-		super(owner, "Holvi -tuonti by Eetu Kallio", true);
+		super(owner, "Procountor -tuonti", true);
 	}
 
     /**

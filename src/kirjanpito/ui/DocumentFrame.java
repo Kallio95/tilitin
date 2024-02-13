@@ -378,7 +378,7 @@ public class DocumentFrame extends JFrame implements AccountSelectionListener {
 		// Lisätty Holvi tuonti valikkoon, EK
 		menu.addSeparator();
 
-		holviImportMenuItem = SwingUtils.createMenuItem("Tuo Holvista…", null, 'H', null, holviListener);
+		holviImportMenuItem = SwingUtils.createMenuItem("Procountor tuonti", null, 'H', null, holviListener);
 		menu.add(holviImportMenuItem);
 
 		/* Luodaan Siirry-valikko. */

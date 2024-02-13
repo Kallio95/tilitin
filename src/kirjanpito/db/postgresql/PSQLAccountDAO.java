@@ -3,6 +3,7 @@ package kirjanpito.db.postgresql;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+import kirjanpito.db.DataAccessException;
 import kirjanpito.db.sql.SQLAccountDAO;
 
 /**
@@ -36,5 +37,11 @@ public class PSQLAccountDAO extends SQLAccountDAO {
 
 	protected PreparedStatement getDeleteQuery() throws SQLException {
 		return sess.prepareStatement("DELETE FROM account WHERE id = ?");
+	}
+
+	@Override
+	public int getIdByAccountNumber(int accountNum) throws DataAccessException {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("Unimplemented method 'getIdByAccountNumber'");
 	}
 }

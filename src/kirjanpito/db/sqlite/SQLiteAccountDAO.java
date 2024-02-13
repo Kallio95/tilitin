@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import kirjanpito.db.Account;
+import kirjanpito.db.DataAccessException;
 import kirjanpito.db.sql.SQLAccountDAO;
 
 /**
@@ -89,5 +90,11 @@ public class SQLiteAccountDAO extends SQLAccountDAO {
 		}
 
 		stmt.setInt(8, obj.getFlags());
+	}
+
+	@Override
+	public int getIdByAccountNumber(int accountNum) throws DataAccessException {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("Unimplemented method 'getIdByAccountNumber'");
 	}
 }
