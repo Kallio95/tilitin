@@ -42,6 +42,10 @@ public class SQLiteAccountDAO extends SQLAccountDAO {
 		return sess.prepareStatement("DELETE FROM account WHERE id = ?");
 	}
 
+	public PreparedStatement getIdByAccountNumberQuery() throws SQLException {
+		return sess.prepareStatement("SELECT id FROM account WHERE number = ?");
+	}
+
 	protected Account createObject(ResultSet rs) throws SQLException {
 		Account obj = new Account();
 		obj.setId(rs.getInt(1));
@@ -94,7 +98,16 @@ public class SQLiteAccountDAO extends SQLAccountDAO {
 
 	@Override
 	public int getIdByAccountNumber(int accountNum) throws DataAccessException {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("Unimplemented method 'getIdByAccountNumber'");
+		try {
+			PreparedStatement stmt = getIdByAccountNumberQuery();
+			stmt.setInt(1, accountNum);
+			ResultSet rs = stmt.executeQuery();
+			if (rs.next()) {
+				return rs.getInt(1);
+			}
+			throw new SQLException("Tiliä ei löytynyt! Tilinumero: " + accountNum);
+		} catch(SQLException e) {
+			throw new DataAccessException(e.getMessage(), e);
+		}
 	}
 }

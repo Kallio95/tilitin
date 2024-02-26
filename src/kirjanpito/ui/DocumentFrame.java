@@ -1250,7 +1250,9 @@ public class DocumentFrame extends JFrame implements AccountSelectionListener {
 		HolviImportDialog dialog = new HolviImportDialog(this);
 
 		AppSettings settings = AppSettings.getInstance();
-		String url = "C:\\temp\\procountor.csv";
+		String url = "/Users/username/procountor.csv";
+
+		int count = 0;
 
 		dialog.create();
 		dialog.setURL(url);
@@ -1260,22 +1262,26 @@ public class DocumentFrame extends JFrame implements AccountSelectionListener {
 
 			try {
 				url = dialog.getURL();
-			DataSource dataSource = registry.getDataSource();
-			Session sess = dataSource.openSession();
-			Period period = registry.getPeriod();
+				DataSource dataSource = registry.getDataSource();
+				Session sess = dataSource.openSession();
+				Period period = registry.getPeriod();
 
-			ImportFromHolviCSV(url, dataSource.getAccountDAO(sess), dataSource.getDocumentDAO(sess), dataSource.getEntryDAO(sess), period);
+				count = ImportFromHolviCSV(url, dataSource.getAccountDAO(sess), dataSource.getDocumentDAO(sess), dataSource.getEntryDAO(sess), period);
+				SwingUtils.showInformationMessage(this,
+					"Tuonti onnistui!\n" +  (count) + " tilitapahtumaa tuotiin.");
+				
 			} catch (Exception e) {
 				e.printStackTrace();
+				SwingUtils.showInformationMessage(this,
+					e.getMessage());
 			}
 			
 		}
 
 		dialog.dispose();
 
-		updatePosition();
-		updateDocument();
-		updateTotalRow();
+		refreshModel(false);
+		showProperties(true);
 	}
 
 
@@ -1424,7 +1430,7 @@ public class DocumentFrame extends JFrame implements AccountSelectionListener {
 	/**
 	 * Näyttää perustiedot.
 	 */
-	public void showProperties() {
+	public void showProperties(boolean saveOnly) {
 		if (!saveDocumentIfChanged()) {
 			return;
 		}
@@ -1446,6 +1452,11 @@ public class DocumentFrame extends JFrame implements AccountSelectionListener {
 				this, settingsModel);
 
 		dialog.create();
+		if (saveOnly) {
+			dialog.save();
+			return;
+		}
+		
 		dialog.setVisible(true);
 	}
 
@@ -3121,7 +3132,7 @@ public class DocumentFrame extends JFrame implements AccountSelectionListener {
 	/* Perustiedot */
 	private ActionListener propertiesListener = new ActionListener() {
 		public void actionPerformed(ActionEvent e) {
-			showProperties();
+			showProperties(false);
 		}
 	};
 
@@ -3608,7 +3619,7 @@ public class DocumentFrame extends JFrame implements AccountSelectionListener {
 	 * @param period	Period -olio (tilikausi), jolle tapahtumat kirjataan.
 	 * @return			true/false riippuen onnistuiko tuonti.
 	 */
-	private boolean ImportFromHolviCSV(String url, AccountDAO accDAO, DocumentDAO docDAO, EntryDAO entryDAO, Period period) {
+	private int ImportFromHolviCSV(String url, AccountDAO accDAO, DocumentDAO docDAO, EntryDAO entryDAO, Period period) throws Exception {
         
         CSVReader reader = null;
         //ArrayList<Document> documents = new ArrayList<Document>();
@@ -3628,11 +3639,13 @@ public class DocumentFrame extends JFrame implements AccountSelectionListener {
             int docId;
             boolean debet;
             int accountId;
+			int count = 0;
 
             while ((nextLine = reader.readNext()) != null) {
                 
                 if (nextLine[7].length() > 0) {
                     printToConsole(nextLine);
+					count += 1;
 
                     // Luodaan tilitapahtumasta Document -olio. (Tosite)
                     doc = docDAO.create(period.getId(), 1, Integer.MAX_VALUE);
@@ -3689,14 +3702,12 @@ public class DocumentFrame extends JFrame implements AccountSelectionListener {
                     // DONE
                 }
             }
-
-			return true;
+			reader.close();
+			return count;
 
         } catch (Exception e) {  
-            e.printStackTrace();  
+            throw new Exception("Virhe CSV tuonnissa.\nTarkista CSV tiedosto, poista tilikausi ja yritä tuontia uudelleen.\nVirhe: " + e.getMessage());
         }
-
-        return false;
     }
 
 	/**
