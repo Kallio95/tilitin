@@ -61,7 +61,7 @@ public class AboutDialog extends JDialog {
 		add(label, c);
 		
 		label = new JLabel(
-			"<html><small>© 2009–2013 Tommi Helineva</small></html>");
+			"<html><small>© 2009–2013 Tommi Helineva</small><br></br><small>© 2021–2024 Eetu Kallio</small></html>");
 		
 		c.gridy = 3;
 		add(label, c);
